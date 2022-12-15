@@ -1,0 +1,107 @@
+        agent {
+            kubernetes {
+                defaultContainer 'jnlp'
+                yaml podTemplate
+            }
+        }
+        options {
+            buildDiscarder(
+                logRotator(numToKeepStr: '100')
+            )
+            timeout(time: 1, unit: 'HOURS')
+            ansiColor('xterm')
+        }
+        stages {
+            stage('Populate Jenkins UI') {
+                steps {
+                    script {
+                            properties([
+                                    parameters([
+                                            [$class: 'ChoiceParameter',
+                                                choiceType: 'PT_SINGLE_SELECT',
+                                                filterLength: 1,
+                                                filterable: true,
+                                                name: 'SVCNAME',
+                                                script: [
+                                                    $class: 'GroovyScript',
+                                                    fallbackScript: [
+                                                        classpath: [],
+                                                        sandbox: true,
+                                                        script:
+                                                            "return['Could not fetch the services']"
+                                                    ],
+                                                    script: [
+                                                        classpath: [],
+                                                        sandbox: true,
+                                                        script: 'return ' + kustomizeProdConfigServiceNamesUI()
+                                                    ]
+                                                ]
+                                            ],
+                                            [$class: 'ChoiceParameter',
+                                                choiceType: 'PT_MULTI_SELECT',
+                                                filterLength: 1,
+                                                filterable: false,
+                                                name: 'ENVIRONMENT',
+                                                script: [
+                                                    $class: 'GroovyScript',
+                                                    fallbackScript: [
+                                                        classpath: [],
+                                                        sandbox: true,
+                                                        script:
+                                                            "return['Could not fetch the non-prod environments']"
+                                                    ],
+                                                    script: [
+                                                        classpath: [],
+                                                        sandbox: true,
+                                                        script: 'return ' + nonprodDCEnvDirUI()
+                                                    ]
+                                                ]
+                                            ],
+                                            [$class: 'ChoiceParameter',
+                                                choiceType: 'PT_SINGLE_SELECT',
+                                                filterLength: 1,
+                                                filterable: false,
+                                                name: 'SOURCE_IMAGE_ARTIFACTORY',
+                                                script: [
+                                                    $class: 'GroovyScript',
+                                                    fallbackScript: [
+                                                        classpath: [],
+                                                        sandbox: true,
+                                                        script:
+                                                            "return['Could not fetch the dev artifactory']"
+                                                    ],
+                                                    script: [
+                                                        classpath: [],
+                                                        sandbox: true,
+                                                        script: 'return ' + devArtifactoryUI()
+                                                    ]
+                                                ]
+                                            ],
+                                            string(name: 'SOURCE_IMAGE_REPOSITORY', defaultValue: '', description: 'Image name that needs to be promoted e.g. [peopleanalytics-reporting-svc]   /   [experience/digital-assistant-svc]'),
+                                            [$class: 'ChoiceParameter',
+                                                choiceType: 'PT_SINGLE_SELECT',
+                                                filterLength: 1,
+                                                filterable: false,
+                                                name: 'TARGET_IMAGE_ARTIFACTORY',
+                                                script: [
+                                                    $class: 'GroovyScript',
+                                                    fallbackScript: [
+                                                        classpath: [],
+                                                        sandbox: true,
+                                                        script:
+                                                            "return['Could not fetch the qa artifactory']"
+                                                    ],
+                                                    script: [
+                                                        classpath: [],
+                                                        sandbox: true,
+                                                        script: 'return ' + qaArtifactoryUI()
+                                                    ]
+                                                ]
+                                            ],
+                                            string(name: 'RELEASE_TAG', defaultValue: '', description: '<b>Release Tag that needs to be promoted. \n Please note that this is [not image] tag it is [release] tag [-dev-config]. \n If release tag has [v] then please give the tag with prefix [v] e.g. v1.0.0-f9000ac-217</b>'),
+                                            booleanParam(name: 'MERGE_PULL_REQUEST', defaultValue: true, description: '<b>If true then created pull request will also be merged.</b>'),
+                                    ])
+                            ])
+                    }
+                }
+            }
